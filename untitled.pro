@@ -1,4 +1,5 @@
-QT += quick
+QT += core gui quick
+
 CONFIG += c++11
 
 # The following define makes your compiler emit warnings if you use
@@ -14,6 +15,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         SplineSeries.cpp \
+        AreaSplineSeries.cpp \
         main.cpp
 
 RESOURCES += qml.qrc
@@ -30,4 +32,5 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 HEADERS += \
-    SplineSeries.h
+    SplineSeries.h \
+    AreaSplineSeries.h \

@@ -1,5 +1,5 @@
-#ifndef GRAPHSTUFF_H
-#define GRAPHSTUFF_H
+#ifndef AREAGRAPHSTUFF_H
+#define AREAGRAPHSTUFF_H
 
 #include <QObject>
 #include <QQuickPaintedItem>
@@ -7,9 +7,13 @@
 #include <QString>
 #include <QPen>
 #include <QPainter>
+
+#include <vector>
+#include <tuple>
 #include <QPointF>
 
-class SplineSeries : public QQuickPaintedItem
+
+class AreaSplineSeries : public QQuickPaintedItem
 {
    Q_OBJECT
 
@@ -21,7 +25,7 @@ class SplineSeries : public QQuickPaintedItem
    Q_PROPERTY(quint64 size READ getSize CONSTANT)
 
 public:
-   explicit SplineSeries(QQuickItem *parent = nullptr);
+   explicit AreaSplineSeries(QQuickItem *parent = nullptr);
 
    QColor color() const;
    void setColor(const QColor &color);
@@ -35,18 +39,21 @@ public:
    quint64 getSize() const;
 
 public slots:
-    void setData(quint64 i, QPointF p);
+   void setDataLower(quint64 i, QPointF const &p);
+   void setDataUpper(quint64 i, QPointF const &p);
 
 private:
-    std::vector<std::pair<QPointF,QPointF>> compute(std::vector<QPointF> const &coords);
+   std::vector<std::pair<QPointF,QPointF>> compute(std::vector<QPointF> const &coords);
 
-    std::vector<QPointF> coords;
-    std::vector<std::pair<QPointF,QPointF>> helper;
+   std::vector<std::pair<QPointF,QPointF>> upper_helper;
+   std::vector<std::pair<QPointF,QPointF>> lower_helper;
+   std::vector<QPointF> lower;
+   std::vector<QPointF> upper;
 
-    bool m_drawKnots{true};
-    QColor m_color{0, 0, 0};
-    qreal m_strokeWidth{1.0};
-    qreal m_knotSize{4.0};
+   bool m_drawKnots{true};
+   QColor m_color{0, 0, 0};
+   qreal m_strokeWidth{1.0};
+   qreal m_knotSize{4.0};
 };
 
-#endif // GRAPHSTUFF_H
+#endif // AREAGRAPHSTUFF_H
