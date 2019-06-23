@@ -7,13 +7,14 @@
 #include <QString>
 #include <QPen>
 #include <QPainter>
+#include "Axis.h"
+#include "AbstractSeries.h"
 
 #include <vector>
 #include <tuple>
 #include <QPointF>
 
-
-class AreaSplineSeries : public QQuickPaintedItem
+class AreaSplineSeries : public AbstractSeries
 {
    Q_OBJECT
 
@@ -25,11 +26,12 @@ class AreaSplineSeries : public QQuickPaintedItem
    Q_PROPERTY(quint64 size READ getSize CONSTANT)
 
 public:
-   explicit AreaSplineSeries(QQuickItem *parent = nullptr);
+   explicit AreaSplineSeries(QQuickPaintedItem *parent = nullptr);
+
+   void paint(QPainter *painter) override;
 
    QColor color() const;
    void setColor(const QColor &color);
-   void paint(QPainter *painter) override;
    qreal strokeWidth() const;
    void setStrokeWidth(const qreal &strokeWidth);
    bool getDrawKnots() const;
@@ -39,12 +41,9 @@ public:
    quint64 getSize() const;
 
 public slots:
-   void setDataLower(quint64 i, QPointF const &p);
-   void setDataUpper(quint64 i, QPointF const &p);
+   void setData(std::vector<QPointF> const &lower, std::vector<QPointF> const &upper);
 
 private:
-   std::vector<std::pair<QPointF,QPointF>> compute(std::vector<QPointF> const &coords);
-
    std::vector<std::pair<QPointF,QPointF>> upper_helper;
    std::vector<std::pair<QPointF,QPointF>> lower_helper;
    std::vector<QPointF> lower;

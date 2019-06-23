@@ -4,59 +4,72 @@
 #include <QRandomGenerator>
 #include <chrono>
 #include <iostream>
+#include <QRectF>
+#include "SplineHelper.h"
+#include <tuple>
 
 using namespace std::chrono;
 
-AreaSplineSeries::AreaSplineSeries(QQuickItem *parent) : QQuickPaintedItem(parent) {
-
+AreaSplineSeries::AreaSplineSeries(QQuickPaintedItem *parent)
+   : AbstractSeries(parent)
+{
    // Enable opengl / antialiasing
    setAntialiasing(true);
    setRenderTarget(QQuickPaintedItem::FramebufferObject);
-
-   // Number of points
-   uint64_t n = 20;
-
-   for (size_t i = 0; i < n; ++i) {
-      auto x = i / static_cast<double>(n);
-      auto l = QRandomGenerator::global()->bounded(0.3);
-      auto h = 1 - QRandomGenerator::global()->bounded(0.3);
-      lower.emplace_back(x, l);
-      upper.emplace_back(x, h);
-   }
-
-   upper_helper = compute(upper);
-   lower_helper = compute(lower);
 }
 
 void AreaSplineSeries::paint(QPainter *painter) {
-   if (lower.size() < 3) return;
+   if (lower.size() == 0 || upper.size() == 0)
+       return;
 
    auto n = upper.size();
    auto w = width();
    auto h = height();
+   auto xfrom = m_axisX == nullptr ? 0.0 : m_axisX->getFrom();
+   auto yfrom = m_axisY == nullptr ? 0.0 : m_axisY->getFrom();
+   auto xto = m_axisX == nullptr ? 1.0 : m_axisX->getTo();
+   auto yto = m_axisY == nullptr ? 1.0 : m_axisY->getTo();
 
-   QPen pen(m_color, m_strokeWidth);
+   // To chart coords (note: we flip y here)
+   auto getx = [xfrom, xto, w](qreal x) { return w * (x - xfrom) / (xto - xfrom);};
+   auto gety = [yfrom, yto, h](qreal y) { return h * (1 - (y - yfrom) / (yto - yfrom));};
+
+   QPen pen(m_color);
    painter->setPen(pen);
 
    // Bottom from left to right
    QPainterPath path;
-   path.moveTo(lower[0].x() * w, lower[0].y() * h);
+   path.moveTo(getx(lower[0].x()), gety(lower[0].y()));
    for (uint64_t i = 0; i < lower.size() - 1; ++i) {
       auto p = lower_helper[i];
-      path.cubicTo(p.first.x() * w, p.first.y() * h, p.second.x() * w, p.second.y() * h, lower[i + 1].x() * w, lower[i + 1].y() * h);
+      path.cubicTo(
+         getx(p.first.x()),
+         gety(p.first.y()),
+         getx(p.second.x()),
+         gety(p.second.y()),
+         getx(lower[i + 1].x()),
+         gety(lower[i + 1].y())
+      );
    }
 
    // Connect lower and upper right
-   path.lineTo(upper[n - 1].x() * w, upper[n - 1].y() * h);
+   path.lineTo(getx(upper[n - 1].x()), gety(upper[n - 1].y()));
 
    // Top right to left
    for (uint64_t i = n - 1; i > 0; --i) {
       auto p = upper_helper[i - 1];
-      path.cubicTo(p.second.x() * w, p.second.y() * h, p.first.x() * w, p.first.y() * h, upper[i - 1].x() * w, upper[i - 1].y() * h);
+      path.cubicTo(
+         getx(p.second.x()),
+         gety(p.second.y()),
+         getx(p.first.x()),
+         gety(p.first.y()),
+         getx(upper[i - 1].x()),
+         gety(upper[i - 1].y())
+      );
    }
 
    // Connect upper and lower left
-   path.lineTo(lower[0].x() * w, lower[0].y() * h);
+   path.lineTo(getx(lower[0].x()), gety(lower[0].y()));
 
    painter->drawPath(path);
    painter->fillPath(path, m_color);
@@ -65,85 +78,27 @@ void AreaSplineSeries::paint(QPainter *painter) {
 
    // Finally draw the knots
    painter->setPen({});
-   painter->setBrush(QColor{0, 0, 0});
+   painter->setBrush(QColor{0, 0, 0, 100});
 
    for (uint64_t i = 0; i < lower.size(); ++i)
-      painter->drawEllipse(QPointF{lower[i].x() * width(), lower[i].y() * height()}, m_knotSize, m_knotSize);
+      painter->drawRect(QRectF{getx(lower[i].x()) - m_knotSize/2, gety(lower[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
 
    for (uint64_t i = 0; i < upper.size(); ++i)
-      painter->drawEllipse(QPointF{upper[i].x() * width(), upper[i].y() * height()}, m_knotSize, m_knotSize);
+      painter->drawRect(QRectF{getx(upper[i].x()) - m_knotSize/2, gety(upper[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
 }
 
-void AreaSplineSeries::setDataLower(quint64 i, const QPointF &p) {
-   lower[i] = p;
-   upper_helper = compute(upper);
-   lower_helper = compute(lower);
+void AreaSplineSeries::setData(std::vector<QPointF> const &l, std::vector<QPointF> const &u) {
+   lower = l;
+   upper = u;
+   upper_helper = SplineHelper::compute(upper);
+   lower_helper = SplineHelper::compute(lower);
    update();
-}
-
-void AreaSplineSeries::setDataUpper(quint64 i, const QPointF &p) {
-   upper[i] = p;
-   upper_helper = compute(upper);
-   lower_helper = compute(lower);
-   update();
-}
-
-std::vector<std::pair<QPointF,QPointF>> AreaSplineSeries::compute(std::vector<QPointF> const &coords) {
-   // n pieces
-   uint64_t n = coords.size() - 1;
-
-   // Thomas algorithm
-   std::vector<qreal> as(n);
-   std::vector<qreal> bs(n);
-   std::vector<qreal> cs(n);
-   std::vector<QPointF> r(n);
-   std::vector<std::pair<QPointF,QPointF>> helper(n);
-
-   // Boundary conditions
-   as[0] = 0;
-   bs[0] = 2;
-   cs[0] = 1;
-   r[0] = coords[0] + 2 * coords[1];
-
-   // Set up matrix and right-hand side (i.e. solve for p1s)
-   for (uint64_t i = 1; i < n - 1; ++i) {
-      as[i] = 1;
-      bs[i] = 4;
-      cs[i] = 1;
-      r[i] = 4 * coords[i] + 2 * coords[i + 1];
-   }
-
-   as[n - 1] = 2;
-   bs[n - 1] = 7;
-   cs[n - 1] = 0;
-   r[n - 1] = 8 * coords[n - 1] + coords[n];
-
-   // Forward substitution
-   for (uint64_t i = 1; i < n; ++i) {
-      auto m = as[i] / bs[i - 1];
-      bs[i] = bs[i] - m * cs[i - 1];
-      r[i] = r[i] - m * r[i - 1];
-   }
-
-   // Backward substitution
-   helper[n - 1].first = r[n - 1] / bs[n - 1];
-
-   for (uint64_t i = n - 1; i > 0; --i)
-      helper[i - 1].first = (r[i - 1] - cs[i - 1] * helper[i].first) / bs[i - 1];
-
-   // Solve for p2s
-   for (uint64_t i = 0; i < n - 1; ++i) helper[i].second = 2 * coords[i + 1] - helper[i + 1].first;
-
-   // Boundary
-   helper[n - 1].second = (coords[n] + helper[n - 1].first) / 2;
-
-   return helper;
 }
 
 QColor AreaSplineSeries::color() const { return m_color; }
 
 void AreaSplineSeries::setColor(const QColor &color) {
-   m_color = color;
+    m_color = color;
    update();
 }
 

@@ -2,22 +2,15 @@
 
 #include <QDebug>
 #include <QRandomGenerator>
-#include <chrono>
-#include <iostream>
+#include "SplineHelper.h"
 
 using namespace std::chrono;
 
-SplineSeries::SplineSeries(QQuickItem *parent) : QQuickPaintedItem(parent) {
+SplineSeries::SplineSeries(QQuickPaintedItem *parent) : AbstractSeries(parent) {
 
    // Enable opengl / antialiasing
-   setAntialiasing(true);
    setRenderTarget(QQuickPaintedItem::FramebufferObject);
-
-   // Number of points
-   uint64_t n = 1500;
-   for (size_t i = 0; i < n; ++i)
-      coords.emplace_back(i / static_cast<double>(n), QRandomGenerator::global()->bounded(1.0));
-   helper = compute(coords);
+   setAntialiasing(true);
 }
 
 void SplineSeries::paint(QPainter *painter) {
@@ -25,15 +18,29 @@ void SplineSeries::paint(QPainter *painter) {
 
    auto w = width();
    auto h = height();
+   auto xfrom = m_axisX == nullptr ? 0.0 : m_axisX->getFrom();
+   auto yfrom = m_axisY == nullptr ? 0.0 : m_axisY->getFrom();
+   auto xto = m_axisX == nullptr ? 1.0 : m_axisX->getTo();
+   auto yto = m_axisY == nullptr ? 1.0 : m_axisY->getTo();
 
-   QPen pen(m_color, m_strokeWidth);
-   painter->setPen(pen);
+   // To chart coords (note: we flip y here)
+   auto getx = [xfrom, xto, w](qreal x) { return w * (x - xfrom) / (xto - xfrom);};
+   auto gety = [yfrom, yto, h](qreal y) { return h * (1 - (y - yfrom) / (yto - yfrom));};
+
+   painter->setPen({m_color, m_strokeWidth});
 
    QPainterPath path;
-   path.moveTo(coords[0].x() * width(), coords[0].y() * height());
+   path.moveTo(getx(coords[0].x()), gety(coords[0].y()));
    for (uint64_t i = 0; i < coords.size() - 1; ++i) {
       auto p = helper[i];
-      path.cubicTo(p.first.x() * w, p.first.y() * h, p.second.x() * w, p.second.y() * h, coords[i + 1].x() * w, coords[i + 1].y() * h);
+      path.cubicTo(
+         getx(p.first.x()),
+         gety(p.first.y()),
+         getx(p.second.x()),
+         gety(p.second.y()),
+         getx(coords[i + 1].x()),
+         gety(coords[i + 1].y())
+      );
    }
    painter->drawPath(path);
 
@@ -41,68 +48,16 @@ void SplineSeries::paint(QPainter *painter) {
 
    // Finally draw the knots
    painter->setPen({});
-   painter->setBrush(QColor{0, 0, 0});
+   painter->setBrush(QColor{0, 0, 0, 100});
 
    for (uint64_t i = 0; i < coords.size(); ++i)
-      painter->drawEllipse(QPointF{coords[i].x() * w, coords[i].y() * h}, m_knotSize, m_knotSize);
+      painter->drawRect(QRectF{getx(coords[i].x()) - m_knotSize/2, gety(coords[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
 }
 
-void SplineSeries::setData(quint64 i, QPointF p) {
-   coords[i] = p;
-   helper = compute(coords);
+void SplineSeries::setData(std::vector<QPointF> const &cs) {
+   coords = cs;
+   helper = SplineHelper::compute(coords);
    update();
-}
-
-std::vector<std::pair<QPointF,QPointF>> SplineSeries::compute(std::vector<QPointF> const &coords) {
-   // n pieces
-   uint64_t n = coords.size() - 1;
-
-   // Thomas algorithm
-   std::vector<qreal> as(n);
-   std::vector<qreal> bs(n);
-   std::vector<qreal> cs(n);
-   std::vector<QPointF> r(n);
-   std::vector<std::pair<QPointF,QPointF>> helper(n);
-
-   // Boundary conditions
-   as[0] = 0;
-   bs[0] = 2;
-   cs[0] = 1;
-   r[0] = coords[0] + 2 * coords[1];
-
-   // Set up matrix and right-hand side (i.e. solve for p1s)
-   for (uint64_t i = 1; i < n - 1; ++i) {
-      as[i] = 1;
-      bs[i] = 4;
-      cs[i] = 1;
-      r[i] = 4 * coords[i] + 2 * coords[i + 1];
-   }
-
-   as[n - 1] = 2;
-   bs[n - 1] = 7;
-   cs[n - 1] = 0;
-   r[n - 1] = 8 * coords[n - 1] + coords[n];
-
-   // Forward substitution
-   for (uint64_t i = 1; i < n; ++i) {
-      auto m = as[i] / bs[i - 1];
-      bs[i] = bs[i] - m * cs[i - 1];
-      r[i] = r[i] - m * r[i - 1];
-   }
-
-   // Backward substitution
-   helper[n - 1].first = r[n - 1] / bs[n - 1];
-
-   for (uint64_t i = n - 1; i > 0; --i)
-      helper[i - 1].first = (r[i - 1] - cs[i - 1] * helper[i].first) / bs[i - 1];
-
-   // Solve for p2s
-   for (uint64_t i = 0; i < n - 1; ++i) helper[i].second = 2 * coords[i + 1] - helper[i + 1].first;
-
-   // Boundary
-   helper[n - 1].second = (coords[n] + helper[n - 1].first) / 2;
-
-   return helper;
 }
 
 QColor SplineSeries::color() const { return m_color; }

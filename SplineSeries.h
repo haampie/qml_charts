@@ -9,7 +9,9 @@
 #include <QPainter>
 #include <QPointF>
 
-class SplineSeries : public QQuickPaintedItem
+#include "AbstractSeries.h"
+
+class SplineSeries : public AbstractSeries
 {
    Q_OBJECT
 
@@ -21,11 +23,11 @@ class SplineSeries : public QQuickPaintedItem
    Q_PROPERTY(quint64 size READ getSize CONSTANT)
 
 public:
-   explicit SplineSeries(QQuickItem *parent = nullptr);
+   explicit SplineSeries(QQuickPaintedItem *parent = nullptr);
+   void paint(QPainter *painter) override;
 
    QColor color() const;
    void setColor(const QColor &color);
-   void paint(QPainter *painter) override;
    qreal strokeWidth() const;
    void setStrokeWidth(const qreal &strokeWidth);
    bool getDrawKnots() const;
@@ -35,11 +37,9 @@ public:
    quint64 getSize() const;
 
 public slots:
-    void setData(quint64 i, QPointF p);
+    void setData(std::vector<QPointF> const &cs);
 
 private:
-    std::vector<std::pair<QPointF,QPointF>> compute(std::vector<QPointF> const &coords);
-
     std::vector<QPointF> coords;
     std::vector<std::pair<QPointF,QPointF>> helper;
 
