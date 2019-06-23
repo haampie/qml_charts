@@ -103,8 +103,8 @@ Window {
 
          Axis {
             id: yaxis2
-            from: -1
-            to: 1
+            from: -1.5
+            to: 1.5
          }
 
          SplineSeries {
@@ -141,19 +141,33 @@ Window {
          }
 
          VerticalLine {
+            id: line
             anchors.fill: parent
             axisX: xaxis2
             valueX: 2.0
-            strokeWidth: 10
-            color: "blue"
+            strokeWidth: 2
+            color: "black"
          }
 
          Point {
+            id: point
             anchors.fill: parent
             axisX: xaxis2
-            axisY: xaxis2
+            axisY: yaxis2
             valueX: 2.0
             valueY: 1.0
+         }
+
+         MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onPositionChanged: {
+               var xcoord = mouse.x / width * (xaxis2.to - xaxis2.from) + xaxis2.from;
+               var ycoord = (1 - mouse.y / height) * (yaxis2.to - yaxis2.from) + yaxis2.from;
+               point.valueX = xcoord
+               point.valueY = ycoord
+               line.valueX = xcoord
+            }
          }
 
          Component.onCompleted: GraphData.drawSines(sine1, sine2, sine3)
