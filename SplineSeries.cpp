@@ -1,12 +1,9 @@
 #include "SplineSeries.h"
-
-#include <QDebug>
-#include <QRandomGenerator>
 #include "SplineHelper.h"
 
-using namespace std::chrono;
-
-SplineSeries::SplineSeries(QQuickPaintedItem *parent) : AbstractSeries(parent) {
+SplineSeries::SplineSeries(QQuickPaintedItem *parent)
+   : AbstractSeries(parent)
+{
 
    // Enable opengl / antialiasing
    setRenderTarget(QQuickPaintedItem::FramebufferObject);

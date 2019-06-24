@@ -22,14 +22,14 @@ Window {
 
          Axis {
             id: xaxis
-            from: -.1
-            to: 1.1
+            from: 0.0
+            to: 100.0
          }
 
          Axis {
             id: yaxis
-            from: -0.2
-            to: 1.2
+            from: 0
+            to: 10
 
             Behavior on from { NumberAnimation { duration: 250; easing.type: Easing.InOutQuad}}
             Behavior on to { NumberAnimation { duration: 250; easing.type: Easing.InOutQuad}}
@@ -48,13 +48,24 @@ Window {
          }
 
          SplineSeries {
-            id: splineExample
+            id: median
             axisX: xaxis
             axisY: yaxis
             anchors.fill: parent
-            strokeWidth: 15
-            color: Qt.rgba(0.1, 0.1, 0.9, .9)
-            Component.onCompleted: GraphData.drawSpline(splineExample)
+            strokeWidth: 2
+            color: Qt.rgba(0.5, 0.3, 1.0, 0.9);
+
+            MouseArea {
+               anchors.fill: parent
+               hoverEnabled: true
+               onPositionChanged: {
+                  var xcoord = mouse.x / width * (xaxis.to - xaxis.from) + xaxis.from;
+                  var ycoord = (1 - mouse.y / height) * (yaxis.to - yaxis.from) + yaxis.from;
+                  FancyProvider.insert(xcoord, ycoord)
+                  FancyProvider.drawMedianTo(median)
+                  FancyProvider.drawBoundaries(areaExample)
+               }
+            }
          }
 
          Column {
@@ -78,14 +89,6 @@ Window {
                opacity: down ? 0.8 : 1
                onClicked: {yaxis.from += 0.2; yaxis.to -= 0.2}
             }
-         }
-
-
-         SequentialAnimation {
-            running: true
-            loops: Animation.Infinite
-            NumberAnimation { target: xaxis; property: "to"; to: 3; duration: 1000; easing.type: Easing.InOutQuad; }
-            NumberAnimation { target: xaxis; property: "to"; to: 1; duration: 1000; easing.type: Easing.InOutQuad; }
          }
       }
 

@@ -1,14 +1,7 @@
 #include "AreaSplineSeries.h"
-
-#include <QDebug>
-#include <QRandomGenerator>
-#include <chrono>
-#include <iostream>
-#include <QRectF>
 #include "SplineHelper.h"
-#include <tuple>
 
-using namespace std::chrono;
+#include <QRectF>
 
 AreaSplineSeries::AreaSplineSeries(QQuickPaintedItem *parent)
    : AbstractSeries(parent)

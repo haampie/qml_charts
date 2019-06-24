@@ -1,9 +1,8 @@
 #include "AbstractSeries.h"
 
-AbstractSeries::AbstractSeries(QQuickPaintedItem *parent) : QQuickPaintedItem(parent)
-{
-
-}
+AbstractSeries::AbstractSeries(QQuickPaintedItem *parent)
+   : QQuickPaintedItem(parent)
+{}
 
 Axis *AbstractSeries::getAxisX() const
 {

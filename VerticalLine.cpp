@@ -1,8 +1,10 @@
 #include "VerticalLine.h"
 
-VerticalLine::VerticalLine(QQuickPaintedItem *parent) : AbstractSeries(parent) {
+using namespace std::chrono;
 
-   // Enable opengl / antialiasing
+VerticalLine::VerticalLine(QQuickPaintedItem *parent)
+   : AbstractSeries(parent)
+{
    setRenderTarget(QQuickPaintedItem::FramebufferObject);
    setAntialiasing(true);
 }

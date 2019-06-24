@@ -16,6 +16,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         AbstractSeries.cpp \
         Axis.cpp \
+        FancyProvider.cpp \
         GraphDataProvider.cpp \
         Point.cpp \
         SplineSeries.cpp \
@@ -39,6 +40,7 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 HEADERS += \
     AbstractSeries.h \
     Axis.h \
+    FancyProvider.h \
     GraphDataProvider.h \
     Point.h \
     SplineHelper.h \
