@@ -48,8 +48,15 @@ public slots:
         series3->setData(sinewave3);
     }
 
+private slots:
+    void updateGraph();
+
 private:
     QTimer * timer;
+    uint64_t t;
+    double f1(double x, double t);
+    double f2(double x, double t);
+    double f3(double x, double t);
 };
 
 #endif // GRAPHDATAPROVIDER_H

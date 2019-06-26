@@ -79,7 +79,7 @@ Window {
                width: 46
                height: 46
                opacity: down ? 0.8 : 1
-               onClicked: {yaxis.from -= 0.2; yaxis.to += 0.2}
+               onClicked: {yaxis.from -= 1; yaxis.to += 1}
             }
 
             Button {
@@ -87,7 +87,7 @@ Window {
                width: 46
                height: 46
                opacity: down ? 0.8 : 1
-               onClicked: {yaxis.from += 0.2; yaxis.to -= 0.2}
+               onClicked: {yaxis.from += 1; yaxis.to -= 1}
             }
          }
       }

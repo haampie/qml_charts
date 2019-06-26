@@ -3,7 +3,7 @@
 #include <QRandomGenerator>
 
 GraphDataProvider::GraphDataProvider(QObject * parent)
-    : QObject(parent), timer(new QTimer(this))
+    : QObject(parent), timer(new QTimer(this)), t(0)
 {
     timer->setInterval(16);
 
@@ -17,10 +17,6 @@ GraphDataProvider::GraphDataProvider(QObject * parent)
        spline.emplace_back(x, QRandomGenerator::global()->bounded(1.0));
     }
 
-    auto f1 = [](double x, double t){ return std::sin(x - t);};
-    auto f2 = [](double x, double t){ return 0.5 * std::sin(2.0 * x - (t - 1.0));};
-    auto f3 = [&f1, &f2](double x, double t){return f1(x, t) + f2(x, t);};
-
     for (size_t i = 0; i < n; ++i) {
        auto x = 2 * 3.1415 * i / static_cast<double>(n - 1);
        sinewave1.emplace_back(x, f1(x, 0));
@@ -29,17 +25,30 @@ GraphDataProvider::GraphDataProvider(QObject * parent)
     }
 
     // Update the sines example continuously
-    auto t = 0;
-    connect(timer, &QTimer::timeout, this, [this, &t, &f1, &f2, &f3](){
-       ++t;
-       for (size_t i = 0; i < sinewave1.size(); ++i) {
-          sinewave1[i].setY(f1(sinewave1[i].x(), 0.005 * t));
-          sinewave2[i].setY(f2(sinewave2[i].x(), 0.005 * t));
-          sinewave3[i].setY(f3(sinewave3[i].x(), 0.005 * t));
-       }
-
-       emit sineChanged();
-    });
-
+    connect(timer, &QTimer::timeout, this, &GraphDataProvider::updateGraph);
     timer->start();
+}
+
+double GraphDataProvider::f1(double x, double t) {
+    return std::sin(x - t);
+}
+
+double GraphDataProvider::f2(double x, double t) {
+    return 0.5 * std::sin(2.0 * x - (t - 1.0));
+};
+
+double GraphDataProvider::f3(double x, double t) {
+    return f1(x, t) + f2(x, t);
+};
+
+void GraphDataProvider::updateGraph() {
+    ++t;
+
+    for (size_t i = 0; i < sinewave1.size(); ++i) {
+        sinewave1[i].setY(f1(sinewave1[i].x(), 0.05 * static_cast<double>(t)));
+        sinewave2[i].setY(f2(sinewave2[i].x(), 0.05 * static_cast<double>(t)));
+        sinewave3[i].setY(f3(sinewave3[i].x(), 0.05 * static_cast<double>(t)));
+    }
+
+    emit sineChanged();
 }
