@@ -15,7 +15,9 @@ void AreaSplineSeries::paint(QPainter *painter) {
    if (lower.size() == 0 || upper.size() == 0)
        return;
 
-   auto n = upper.size();
+   // This prevents stroke opacity + fill opacity multiplying troubles
+   painter->setCompositionMode(QPainter::CompositionMode_Source);
+
    auto w = width();
    auto h = height();
    auto xfrom = m_axisX == nullptr ? 0.0 : m_axisX->getFrom();
@@ -27,8 +29,7 @@ void AreaSplineSeries::paint(QPainter *painter) {
    auto getx = [xfrom, xto, w](qreal x) { return w * (x - xfrom) / (xto - xfrom);};
    auto gety = [yfrom, yto, h](qreal y) { return h * (1 - (y - yfrom) / (yto - yfrom));};
 
-   QPen pen(m_color);
-   painter->setPen(pen);
+   painter->setPen(QPen{m_color, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin});
 
    // Bottom from left to right
    QPainterPath path;
@@ -46,10 +47,10 @@ void AreaSplineSeries::paint(QPainter *painter) {
    }
 
    // Connect lower and upper right
-   path.lineTo(getx(upper[n - 1].x()), gety(upper[n - 1].y()));
+   path.lineTo(getx(upper.back().x()), gety(upper.back().y()));
 
    // Top right to left
-   for (uint64_t i = n - 1; i > 0; --i) {
+   for (uint64_t i = upper.size() - 1; i > 0; --i) {
       auto p = upper_helper[i - 1];
       path.cubicTo(
          getx(p.second.x()),
@@ -64,34 +65,35 @@ void AreaSplineSeries::paint(QPainter *painter) {
    // Connect upper and lower left
    path.lineTo(getx(lower[0].x()), gety(lower[0].y()));
 
-   painter->drawPath(path);
    painter->fillPath(path, m_color);
-
-   if (!m_drawKnots) return;
-
-   // Finally draw the knots
-   painter->setPen({});
-   painter->setBrush(QColor{0, 0, 0, 100});
-
-   for (uint64_t i = 0; i < lower.size(); ++i)
-      painter->drawRect(QRectF{getx(lower[i].x()) - m_knotSize/2, gety(lower[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
-
-   for (uint64_t i = 0; i < upper.size(); ++i)
-      painter->drawRect(QRectF{getx(upper[i].x()) - m_knotSize/2, gety(upper[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
+   painter->drawPath(path);
 }
 
 void AreaSplineSeries::setData(std::vector<QPointF> const &l, std::vector<QPointF> const &u) {
-   lower = l;
-   upper = u;
-   upper_helper = SplineHelper::compute(upper);
-   lower_helper = SplineHelper::compute(lower);
+   lower = std::move(l);
+   upper = std::move(u);
+   upper_helper = m_splineType == 0 ? SplineHelper::compute(upper) : SplineHelper::spline1d(upper);
+   lower_helper = m_splineType == 0 ? SplineHelper::compute(lower) : SplineHelper::spline1d(lower);
+   update();
+}
+
+int AreaSplineSeries::splineType() const
+{
+   return m_splineType;
+}
+
+void AreaSplineSeries::setSplineType(int value)
+{
+   m_splineType = value;
+   upper_helper = m_splineType == 0 ? SplineHelper::compute(upper) : SplineHelper::spline1d(upper);
+   lower_helper = m_splineType == 0 ? SplineHelper::compute(lower) : SplineHelper::spline1d(lower);
    update();
 }
 
 QColor AreaSplineSeries::color() const { return m_color; }
 
 void AreaSplineSeries::setColor(const QColor &color) {
-    m_color = color;
+   m_color = color;
    update();
 }
 
@@ -103,23 +105,3 @@ void AreaSplineSeries::setStrokeWidth(const qreal &strokeWidth) {
 }
 
 quint64 AreaSplineSeries::getSize() const { return upper.size(); }
-
-qreal AreaSplineSeries::getKnotSize() const
-{
-    return m_knotSize;
-}
-
-void AreaSplineSeries::setKnotSize(const qreal &knotSize)
-{
-    m_knotSize = knotSize;
-}
-
-bool AreaSplineSeries::getDrawKnots() const
-{
-    return m_drawKnots;
-}
-
-void AreaSplineSeries::setDrawKnots(bool drawKnots)
-{
-    m_drawKnots = drawKnots;
-}

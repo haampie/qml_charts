@@ -41,10 +41,8 @@ Window {
             axisY: yaxis
             anchors.fill: parent
             strokeWidth: 10
-            drawKnots: true
-            knotSize: 5
             color: Qt.rgba(.9, .6, .3, 1)
-            Component.onCompleted: GraphData.drawAreaSpline(areaExample)
+            splineType: button.checked ? 1 : 0
          }
 
          SplineSeries {
@@ -54,17 +52,33 @@ Window {
             anchors.fill: parent
             strokeWidth: 2
             color: Qt.rgba(0.5, 0.3, 1.0, 0.9);
+            splineType: button.checked ? 1 : 0
+         }
 
-            MouseArea {
-               anchors.fill: parent
-               hoverEnabled: true
-               onPositionChanged: {
-                  var xcoord = mouse.x / width * (xaxis.to - xaxis.from) + xaxis.from;
-                  var ycoord = (1 - mouse.y / height) * (yaxis.to - yaxis.from) + yaxis.from;
-                  FancyProvider.insert(xcoord, ycoord)
-                  FancyProvider.drawMedianTo(median)
-                  FancyProvider.drawBoundaries(areaExample)
-               }
+         Markers {
+            id: markers
+            axisX: xaxis
+            axisY: yaxis
+            anchors.fill: parent
+            strokeWidth: 4
+            radius: 2
+            fillColor: Qt.rgba(0, 0, 0, .2)
+            strokeColor: Qt.rgba(0, 0, 0, .1)
+            Component.onCompleted: FancyProvider.drawMarkers(markers)
+         }
+
+         MouseArea {
+            anchors.fill: parent
+            hoverEnabled: true
+            onPositionChanged: FancyProvider.insert(mouse.x / width * (xaxis.to - xaxis.from) + xaxis.from, (1 - mouse.y / height) * (yaxis.to - yaxis.from) + yaxis.from)
+         }
+
+         Connections {
+            target: FancyProvider
+            onGraphsChanged: {
+               FancyProvider.drawBoundaries(areaExample)
+               FancyProvider.drawMedianTo(median)
+               FancyProvider.drawMarkers(markers)
             }
          }
 
@@ -73,6 +87,12 @@ Window {
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.left
             anchors.leftMargin: 16
+
+            Button {
+               id: button
+               text: "Spline type"
+               checkable: true
+            }
 
             Button {
                text: "+"
@@ -116,8 +136,6 @@ Window {
             axisY: yaxis2
             anchors.fill: parent
             strokeWidth: 1
-            drawKnots: true
-            knotSize: 10
             color: "orange"
          }
 
@@ -127,8 +145,6 @@ Window {
             axisY: yaxis2
             anchors.fill: parent
             strokeWidth: 1
-            drawKnots: true
-            knotSize: 10
             color: "blue"
          }
 
@@ -138,8 +154,6 @@ Window {
             axisY: yaxis2
             anchors.fill: parent
             strokeWidth: 3
-            drawKnots: true
-            knotSize: 10
             color: "pink"
          }
 

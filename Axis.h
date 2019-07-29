@@ -7,8 +7,8 @@ class Axis : public QObject
 {
     Q_OBJECT
 
-    Q_PROPERTY(qreal from READ getFrom WRITE setFrom)
-    Q_PROPERTY(qreal to READ getTo WRITE setTo)
+    Q_PROPERTY(qreal from READ getFrom WRITE setFrom NOTIFY rangeChanged)
+    Q_PROPERTY(qreal to READ getTo WRITE setTo NOTIFY rangeChanged)
 
 public:
     explicit Axis(QObject *parent = nullptr);

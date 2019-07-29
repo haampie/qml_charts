@@ -42,9 +42,9 @@ void Point::paint(QPainter *painter) {
 
    painter->setPen({});
    painter->setBrush(QColor{"white"});
-   painter->drawEllipse(QPointF{getx(m_valueX), gety(m_valueY)}, 10.0, 10.0);
+   painter->drawEllipse(QPointF{getx(m_valueX), gety(m_valueY)}, 6.0, 6.0);
    painter->setBrush(QColor{"black"});
    painter->setBrush({});
-   painter->setPen(QPen{QColor{"black"}, 2});
-   painter->drawEllipse(QPointF{getx(m_valueX), gety(m_valueY)}, 10.0, 10.0);
+   painter->setPen(QPen{QColor{"black"}, 2.0});
+   painter->drawEllipse(QPointF{getx(m_valueX), gety(m_valueY)}, 6.0, 6.0);
 }

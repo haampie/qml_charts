@@ -15,12 +15,17 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         AbstractSeries.cpp \
+        AreaSplineSeries.cpp \
         Axis.cpp \
+        Bar.cpp \
         FancyProvider.cpp \
         GraphDataProvider.cpp \
+        Histogram.cpp \
+        HorizontalLine.cpp \
+        MajorLinesY.cpp \
+        Markers.cpp \
         Point.cpp \
         SplineSeries.cpp \
-        AreaSplineSeries.cpp \
         VerticalLine.cpp \
         main.cpp
 
@@ -39,11 +44,16 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 
 HEADERS += \
     AbstractSeries.h \
+    AreaSplineSeries.h \
     Axis.h \
+    Bar.h \
     FancyProvider.h \
     GraphDataProvider.h \
+    Histogram.h \
+    HorizontalLine.h \
+    MajorLinesY.h \
+    Markers.h \
+    MaybeValue.h \
     Point.h \
-    SplineHelper.h \
     SplineSeries.h \
-    AreaSplineSeries.h \ \
     VerticalLine.h

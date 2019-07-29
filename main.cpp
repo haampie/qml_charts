@@ -9,12 +9,15 @@
 #include "GraphDataProvider.h"
 #include "VerticalLine.h"
 #include "Point.h"
+#include "VerticalLine.h"
+#include "Markers.h"
 
 #include "FancyProvider.h"
+#include "Histogram.h"
 
 int main(int argc, char *argv[])
 {
-   FancyProvider fp{20, 0.0f, 100.0f};
+   FancyProvider fp{Histogram{20, {0.0f, 100.0f}}};
 
    // Necessary for antialising of graphs
    QSurfaceFormat fmt;
@@ -32,6 +35,7 @@ int main(int argc, char *argv[])
    qmlRegisterType<Axis>("Harmen", 1, 0, "Axis");
    qmlRegisterType<VerticalLine>("Harmen", 1, 0, "VerticalLine");
    qmlRegisterType<Point>("Harmen", 1, 0, "Point");
+   qmlRegisterType<Markers>("Harmen", 1, 0, "Markers");
 
    // Create a data provider for the graphs
    GraphDataProvider data;

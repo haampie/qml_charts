@@ -4,7 +4,6 @@
 SplineSeries::SplineSeries(QQuickPaintedItem *parent)
    : AbstractSeries(parent)
 {
-
    // Enable opengl / antialiasing
    setRenderTarget(QQuickPaintedItem::FramebufferObject);
    setAntialiasing(true);
@@ -24,7 +23,7 @@ void SplineSeries::paint(QPainter *painter) {
    auto getx = [xfrom, xto, w](qreal x) { return w * (x - xfrom) / (xto - xfrom);};
    auto gety = [yfrom, yto, h](qreal y) { return h * (1 - (y - yfrom) / (yto - yfrom));};
 
-   painter->setPen({m_color, m_strokeWidth});
+   painter->setPen({m_color, m_strokeWidth, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin});
 
    QPainterPath path;
    path.moveTo(getx(coords[0].x()), gety(coords[0].y()));
@@ -40,20 +39,23 @@ void SplineSeries::paint(QPainter *painter) {
       );
    }
    painter->drawPath(path);
-
-   if (!m_drawKnots) return;
-
-   // Finally draw the knots
-   painter->setPen({});
-   painter->setBrush(QColor{0, 0, 0, 100});
-
-   for (uint64_t i = 0; i < coords.size(); ++i)
-      painter->drawRect(QRectF{getx(coords[i].x()) - m_knotSize/2, gety(coords[i].y()) - m_knotSize/2, m_knotSize, m_knotSize});
 }
 
 void SplineSeries::setData(std::vector<QPointF> const &cs) {
-   coords = cs;
-   helper = SplineHelper::compute(coords);
+   coords = std::move(cs);
+   helper = m_splineType == 0 ? SplineHelper::compute(coords) : SplineHelper::spline1d(coords);
+   update();
+}
+
+int SplineSeries::splineType() const
+{
+   return m_splineType;
+}
+
+void SplineSeries::setSplineType(int splineType)
+{
+   m_splineType = splineType;
+   helper = m_splineType == 0 ? SplineHelper::compute(coords) : SplineHelper::spline1d(coords);
    update();
 }
 
@@ -72,24 +74,4 @@ void SplineSeries::setStrokeWidth(const qreal &strokeWidth) {
 }
 
 quint64 SplineSeries::getSize() const { return coords.size(); }
-
-qreal SplineSeries::getKnotSize() const
-{
-    return m_knotSize;
-}
-
-void SplineSeries::setKnotSize(const qreal &knotSize)
-{
-    m_knotSize = knotSize;
-}
-
-bool SplineSeries::getDrawKnots() const
-{
-    return m_drawKnots;
-}
-
-void SplineSeries::setDrawKnots(bool drawKnots)
-{
-    m_drawKnots = drawKnots;
-}
 
